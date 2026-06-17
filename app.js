@@ -4,9 +4,11 @@
     { name: "Kevlar Pouch", cost: 1 },
     { name: "Mithril Pouch", cost: 2 },
   ];
+  const FAVORITES_KEY = "hv-charms:favorites";
 
   const state = {
     charms: [],
+    favorites: new Set(),
     selections: Array.from({ length: 7 }, () => null),
     slotPouches: Array.from({ length: 7 }, () => POUCHES[0]),
     slots: 7,
@@ -47,6 +49,29 @@
 
   function isCompatible(charm) {
     return charm.slot === "All" || charm.slot === state.itemType;
+  }
+
+  function loadFavorites() {
+    try {
+      const ids = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+      state.favorites = new Set(ids.filter(Number.isInteger));
+    } catch {
+      state.favorites = new Set();
+    }
+  }
+
+  function saveFavorites() {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify([...state.favorites]));
+  }
+
+  function toggleFavorite(charm) {
+    if (state.favorites.has(charm.id)) {
+      state.favorites.delete(charm.id);
+    } else {
+      state.favorites.add(charm.id);
+    }
+    saveFavorites();
+    renderCharms();
   }
 
   function selectedFamilies() {
@@ -97,6 +122,7 @@
     const aState = availability(a);
     const bState = availability(b);
     return (
+      Number(state.favorites.has(b.id)) - Number(state.favorites.has(a.id)) ||
       Number(bState.available) - Number(aState.available) ||
       b.cost - a.cost ||
       a.family.localeCompare(b.family) ||
@@ -239,10 +265,23 @@
 
     visible.forEach((charm) => {
       const status = availability(charm);
-      const row = document.createElement("button");
-      row.type = "button";
+      const row = document.createElement("div");
       row.className = "charm-row";
-      row.disabled = !status.available;
+      row.classList.toggle("unavailable", !status.available);
+
+      const favorite = document.createElement("button");
+      favorite.type = "button";
+      favorite.className = "favorite-button";
+      favorite.classList.toggle("active", state.favorites.has(charm.id));
+      favorite.setAttribute("data-empty", "☆");
+      favorite.setAttribute("data-filled", "★");
+      favorite.setAttribute("aria-label", state.favorites.has(charm.id) ? `Unfavorite ${charm.name}` : `Favorite ${charm.name}`);
+      favorite.addEventListener("click", () => toggleFavorite(charm));
+
+      const choose = document.createElement("button");
+      choose.type = "button";
+      choose.className = "charm-pick";
+      choose.disabled = !status.available;
 
       const name = document.createElement("span");
       name.className = "name";
@@ -256,8 +295,9 @@
       effect.className = "effect-panel";
       effect.textContent = charm.effects;
 
-      row.append(name, meta, effect);
-      row.addEventListener("click", () => addCharm(charm));
+      choose.append(name, meta);
+      choose.addEventListener("click", () => addCharm(charm));
+      row.append(favorite, choose, effect);
       els.charmList.append(row);
     });
   }
@@ -373,6 +413,7 @@
 
   async function init() {
     bindEvents();
+    loadFavorites();
 
     try {
       const response = await fetch("data/charms.json");

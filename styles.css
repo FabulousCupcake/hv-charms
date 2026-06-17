@@ -336,25 +336,86 @@ h2 {
 }
 
 .charm-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   position: relative;
   width: 100%;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75em;
+  gap: 0.25em;
   min-height: 2em;
   border: 0;
   color: var(--text);
-  padding: 0.35em 0.5em;
+  padding: 0 0 0 0.5em;
   text-align: left;
 }
 
-.charm-row:hover:not(:disabled) {
+.charm-row:hover {
   background: var(--bg);
 }
 
-.charm-row:disabled {
-  cursor: not-allowed;
+.charm-row.unavailable {
   background: var(--surface);
+}
+
+.favorite-button,
+.charm-pick {
+  color: var(--text);
+}
+
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: auto;
+  height: 2em;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 110%;
+  opacity: 0.2;
+}
+
+.favorite-button::before {
+  content: attr(data-empty);
+}
+
+.favorite-button:hover::before,
+.favorite-button:focus-visible::before,
+.favorite-button.active::before {
+  content: attr(data-filled);
+}
+
+.favorite-button.active {
+  opacity: 1;
+}
+
+.charm-row:hover .favorite-button,
+.favorite-button:focus-visible {
+  opacity: 1;
+}
+
+.favorite-button:hover,
+.favorite-button:focus-visible {
+  background: transparent;
+  color: var(--text);
+  opacity: 1;
+}
+
+.charm-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  min-width: 0;
+  min-height: 2em;
+  border: 0;
+  background: transparent;
+  padding: 0.35em 0.5em 0.35em 0;
+  text-align: left;
+}
+
+.charm-pick:disabled {
+  cursor: not-allowed;
   color: var(--disabled-text);
   opacity: 1;
 }
