@@ -4,5 +4,5 @@ Charm Planner to kinda simulate and understand what can be slotted with the Char
 
 ## Usage
 
-Head to <placeholder.
+Head to <https://fabulouscupcake.github.io/hv-charms/>
 
