@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HV Charm Planner</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <h1>Charm Planner</h1>
+      </header>
+
+      <section class="config" aria-label="Planner settings">
+        <div class="preset-block">
+          <span class="field-label">Preset</span>
+          <div class="preset-group" aria-label="Rarity presets">
+            <button class="preset active" type="button" data-slots="7" data-cp="100">Peerless</button>
+            <button class="preset" type="button" data-slots="6" data-cp="85">Legendary</button>
+          </div>
+        </div>
+
+        <div class="limit-block">
+          <label>
+            <span>Slots:</span>
+            <input id="slotInput" type="text" inputmode="numeric" value="7">
+          </label>
+          <label>
+            <span>CP:</span>
+            <input id="cpInput" type="text" inputmode="numeric" value="100">
+          </label>
+        </div>
+
+        <div class="type-block">
+          <span class="field-label">Type</span>
+          <div class="toggle-group" aria-label="Item type">
+            <button class="item-toggle active" type="button" data-type="Weapon">Weapon</button>
+            <button class="item-toggle" type="button" data-type="Armour/Shield">Armor/Shield</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="planner">
+        <div class="panel selected-panel">
+          <div class="selected-heading">
+            <h2>Selected Charms</h2>
+            <div class="selected-head-actions">
+              <span id="selectedRemainingCp">100 CP left</span>
+            </div>
+          </div>
+          <div id="selectionList" class="selection-list"></div>
+          <div class="selected-footer">
+            <button id="clearButton" type="button">Clear Charms</button>
+          </div>
+        </div>
+
+        <div class="panel charms-panel">
+          <div class="panel-head">
+            <h2>Charms</h2>
+            <span id="remainingCp">100 CP left</span>
+          </div>
+          <div id="charmList" class="charm-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

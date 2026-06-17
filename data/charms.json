@@ -1,0 +1,380 @@
+[
+  {
+    "charm": "Lesser Featherweight Charm",
+    "charmPointCost": "5",
+    "effects": "Reduces Burden and Interference",
+    "materialCosts": "Featherweight Shard x10",
+    "slot": "All"
+  },
+  {
+    "charm": "Greater Featherweight Charm",
+    "charmPointCost": "15",
+    "effects": "Reduces Burden and Interference",
+    "materialCosts": "Featherweight Shard x20",
+    "slot": "All"
+  },
+  {
+    "charm": "Lesser Hollowforged Charm",
+    "charmPointCost": "15",
+    "effects": "Turns damage into Void and Adds 30% Void Strike",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Hollowforged Charm",
+    "charmPointCost": "25",
+    "effects": "Turns damage into Void and Adds 50% Void Strike",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Fire Strike Charm",
+    "charmPointCost": "10",
+    "effects": "Adds 30% Fire Strike",
+    "materialCosts": "Infusion of Flames x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Fire Strike Charm",
+    "charmPointCost": "20",
+    "effects": "Adds 50% Fire Strike",
+    "materialCosts": "Infusion of Flames x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Cold Strike Charm",
+    "charmPointCost": "10",
+    "effects": "Adds 30% Cold Strike",
+    "materialCosts": "Infusion of Frost x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Cold Strike Charm",
+    "charmPointCost": "20",
+    "effects": "Adds 50% Cold Strike",
+    "materialCosts": "Infusion of Frost x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Lightning Strike Charm",
+    "charmPointCost": "10",
+    "effects": "Adds 30% Lightning Strike",
+    "materialCosts": "Infusion of Lightning x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Lightning Strike Charm",
+    "charmPointCost": "20",
+    "effects": "Adds 50% Lightning Strike",
+    "materialCosts": "Infusion of Lightning x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Wind Strike Charm",
+    "charmPointCost": "10",
+    "effects": "Adds 30% Wind Strike",
+    "materialCosts": "Infusion of Storms x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Wind Strike Charm",
+    "charmPointCost": "20",
+    "effects": "Adds 50% Wind Strike",
+    "materialCosts": "Infusion of Storms x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Holy Strike Charm",
+    "charmPointCost": "10",
+    "effects": "Adds 30% Holy Strike",
+    "materialCosts": "Infusion of Divinity x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Holy Strike Charm",
+    "charmPointCost": "20",
+    "effects": "Adds 50% Holy Strike",
+    "materialCosts": "Infusion of Divinity x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Dark Strike Charm",
+    "charmPointCost": "10",
+    "effects": "Adds 30% Dark Strike",
+    "materialCosts": "Infusion of Darkness x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Dark Strike Charm",
+    "charmPointCost": "20",
+    "effects": "Adds 50% Dark Strike",
+    "materialCosts": "Infusion of Darkness x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Butcher Charm",
+    "charmPointCost": "15",
+    "effects": "Increases Attack Damage",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Butcher Charm",
+    "charmPointCost": "30",
+    "effects": "Increases Attack Damage",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Swiftness Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Attack Speed",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Swiftness Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Attack Speed",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Fatality Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Attack Critical Strike Damage",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Fatality Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Attack Critical Strike Damage",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Overpower Charm",
+    "charmPointCost": "5",
+    "effects": "Adds 12% Counter-Parry",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Overpower Charm",
+    "charmPointCost": "10",
+    "effects": "Adds 20% Counter-Parry",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Voidseeker Charm",
+    "charmPointCost": "15",
+    "effects": "Turns damage into Void, Increases Accuracy, and Adds 30% Void Strike",
+    "materialCosts": "Voidseeker Shard x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Voidseeker Charm",
+    "charmPointCost": "30",
+    "effects": "Turns damage into Void, Increases Accuracy, and Adds 50% Void Strike",
+    "materialCosts": "Voidseeker Shard x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Archmage Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Magic Damage",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Archmage Charm",
+    "charmPointCost": "40",
+    "effects": "Increases Magic Damage",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Economizer Charm",
+    "charmPointCost": "15",
+    "effects": "Adds 10% Mana Conservation for One-Handed and 15% for Two-Handed",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Economizer Charm",
+    "charmPointCost": "30",
+    "effects": "Adds 15% Mana Conservation for One-Handed and 25% for Two-Handed",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Spellweaver Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Cast Speed by 5%",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Spellweaver Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Cast Speed by 7.5%",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Annihilator Charm",
+    "charmPointCost": "15",
+    "effects": "Increases Magic Critical Strike Damage",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Annihilator Charm",
+    "charmPointCost": "30",
+    "effects": "Increases Magic Critical Strike Damage",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Penetrator Charm",
+    "charmPointCost": "15",
+    "effects": "Adds 12% Counter-Resist",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Penetrator Charm",
+    "charmPointCost": "30",
+    "effects": "Adds 20% Counter-Resist",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Aether Charm",
+    "charmPointCost": "15",
+    "effects": "Increases Accuracy and adds Mana Conservation",
+    "materialCosts": "Aether Shard x10",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Greater Aether Charm",
+    "charmPointCost": "30",
+    "effects": "Increases Accuracy and adds Mana Conservation",
+    "materialCosts": "Aether Shard x20",
+    "slot": "Weapon"
+  },
+  {
+    "charm": "Lesser Fire-proof Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Fire Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Flames x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Fire-proof Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Fire Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Flames x20",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Lesser Cold-proof Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Cold Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Frost x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Cold-proof Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Cold Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Frost x20",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Lesser Lightning-proof Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Lightning Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Lightning x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Lightning-proof Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Lightning Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Lightning x20",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Lesser Wind-proof Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Wind Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Storms x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Wind-proof Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Wind Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Storms x20",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Lesser Holy-proof Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Holy Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Divinity x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Holy-proof Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Holy Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Divinity x20",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Lesser Dark-proof Charm",
+    "charmPointCost": "10",
+    "effects": "Increases Dark Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Darkness x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Dark-proof Charm",
+    "charmPointCost": "20",
+    "effects": "Increases Dark Mitigation depending on the equipment slot1",
+    "materialCosts": "Infusion of Darkness x20",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Lesser Juggernaut Charm",
+    "charmPointCost": "20",
+    "effects": "Increases HP depending on the equipment slot1",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Juggernaut Charm",
+    "charmPointCost": "40",
+    "effects": "Increases HP depending on the equipment slot1",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Lesser Capacitor Charm",
+    "charmPointCost": "10",
+    "effects": "Increases MP depending on the equipment slot1",
+    "materialCosts": "Energy Cells x10",
+    "slot": "Armour/Shield"
+  },
+  {
+    "charm": "Greater Capacitor Charm",
+    "charmPointCost": "20",
+    "effects": "Increases MP depending on the equipment slot1",
+    "materialCosts": "Energy Cells x20",
+    "slot": "Armour/Shield"
+  }
+]

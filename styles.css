@@ -1,0 +1,389 @@
+:root {
+  color-scheme: light;
+  --bg: #E3E0D1;
+  --surface: #EDEBDF;
+  --line: #5C0D11;
+  --text: #5C0D11;
+  --disabled-text: #C2A8A4;
+  --control-height: 2.25em;
+  --row-height: 2.75em;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+main {
+  width: min(1120px, calc(100% - 1.5em));
+  margin: 0 auto;
+  padding: 1em 0 1.75em;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  line-height: 1;
+  color: var(--text);
+}
+
+button {
+  cursor: pointer;
+}
+
+input {
+  -webkit-text-fill-color: var(--text);
+}
+
+.topbar,
+.config,
+.planner,
+.panel-head,
+.selected-heading,
+.charm-row,
+.selection-main,
+.selected-head-actions {
+  display: flex;
+  align-items: center;
+}
+
+.topbar {
+  justify-content: space-between;
+  gap: 1em;
+  margin-bottom: 0.75em;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-size: 100%;
+}
+
+.over-limit #remainingCp {
+  color: var(--text);
+}
+
+.config {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  justify-content: flex-start;
+  align-items: end;
+  gap: 1.25em;
+  padding: 0.5em;
+  border: 1px solid var(--line);
+  border-radius: 0.5em;
+  background: var(--surface);
+}
+
+.field-label,
+.config label span {
+  display: flex;
+  align-items: center;
+  min-height: 1em;
+  color: var(--text);
+  font-size: 90%;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.preset-block,
+.type-block {
+  display: grid;
+  grid-template-rows: 1em var(--control-height);
+  gap: 0.25em;
+}
+
+.limit-block {
+  display: grid;
+  grid-template-columns: max-content 4em;
+  gap: 0.25em 0.5em;
+  align-self: center;
+  padding-bottom: 0;
+}
+
+.type-block {
+  margin-left: auto;
+  justify-items: end;
+}
+
+.preset-group,
+.toggle-group,
+.pouch-group {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.5em;
+}
+
+.preset,
+.item-toggle,
+#clearButton,
+.pouch-group button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height);
+  border: 0;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 0.75em;
+  font-weight: 700;
+}
+
+.preset + .preset,
+.item-toggle + .item-toggle,
+.pouch-group button + button {
+  border-left: 1px solid var(--line);
+}
+
+.preset.active,
+.item-toggle.active,
+.pouch-group button.active {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.limit-block label span {
+  justify-content: flex-end;
+}
+
+.limit-block input {
+  width: 4em;
+  height: 1.5em;
+  border: 1px solid var(--line);
+  border-radius: 0.25em;
+  padding: 0 0.5em;
+  background: var(--surface);
+  text-align: right;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.config label {
+  display: grid;
+  grid-template-columns: max-content 4em;
+  align-items: center;
+  gap: 0.25em;
+  min-height: 1.5em;
+}
+
+.config .limit-block label {
+  display: contents;
+}
+
+#clearButton {
+  border: 1px solid var(--line);
+  border-radius: 0.5em;
+}
+
+.planner {
+  align-items: start;
+  gap: 0.75em;
+  margin-top: 0.75em;
+}
+
+.panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.5em;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.selected-panel {
+  flex: 1 1 66%;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.charms-panel {
+  flex: 1 1 34%;
+}
+
+.panel-head {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  padding: 0.75em;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-size: 90%;
+}
+
+.selected-heading {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  padding: 0.75em 0 0.5em;
+  color: var(--text);
+}
+
+.selected-heading h2 {
+  font-size: 180%;
+}
+
+.selected-head-actions {
+  justify-content: flex-end;
+  gap: 0.75em;
+  color: var(--text);
+  font-size: 120%;
+  line-height: 1;
+}
+
+#selectedRemainingCp {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35em;
+}
+
+#selectedRemainingCp > span {
+  opacity: 0.65;
+  font-weight: 600;
+}
+
+.selected-head-actions strong {
+  color: var(--text);
+  font-size: 170%;
+  font-weight: 600;
+}
+
+.charm-list,
+.selection-list {
+  display: grid;
+  gap: 0;
+  background: var(--line);
+}
+
+.selected-panel .selection-list {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.5em;
+}
+
+.selected-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75em;
+}
+
+.charm-row,
+.selection-row,
+.empty {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.charm-row:last-child,
+.selection-row:last-child,
+.empty:last-child {
+  border-bottom: 0;
+}
+
+.charm-row {
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  min-height: 2em;
+  border: 0;
+  color: var(--text);
+  padding: 0.35em 0.6em;
+  text-align: left;
+}
+
+.charm-row:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.charm-row:disabled {
+  cursor: not-allowed;
+  background: var(--surface);
+  color: var(--disabled-text);
+  opacity: 1;
+}
+
+.name {
+  min-width: 0;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.meta {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-size: 90%;
+  line-height: 1;
+}
+
+.selection-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5em;
+  align-items: center;
+  min-height: var(--row-height);
+  padding: 0.25em 0.5em;
+}
+
+.selection-row.empty-slot {
+  color: var(--text);
+}
+
+.selection-row.empty-slot .selection-main {
+  cursor: default;
+}
+
+.selection-main {
+  display: grid;
+  grid-template-columns: 2em minmax(0, 1fr) auto;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.75em;
+  min-width: 0;
+  min-height: var(--control-height);
+}
+
+.slot-number {
+  font-weight: 700;
+  text-align: right;
+}
+
+.pouch-group button {
+  min-width: 2.25em;
+  padding: 0 0.5em;
+}
+
+.empty {
+  padding: 1em 0.75em;
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  main {
+    width: min(100% - 1em, 1120px);
+  }
+
+  .topbar,
+  .planner,
+  .config {
+    display: grid;
+  }
+
+  .type-block {
+    margin-left: 0;
+    justify-items: start;
+  }
+
+  .selection-row {
+    grid-template-columns: 1fr;
+  }
+}
