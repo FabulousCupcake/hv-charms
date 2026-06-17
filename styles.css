@@ -132,6 +132,12 @@ h2 {
   font-weight: 700;
 }
 
+.preset,
+.item-toggle {
+  line-height: var(--control-height);
+  padding-bottom: 0.1em;
+}
+
 .preset + .preset,
 .item-toggle + .item-toggle,
 .pouch-group button + button {
@@ -268,6 +274,54 @@ h2 {
   font-weight: 600;
 }
 
+.favorite-presets {
+  display: grid;
+  gap: 0.5em;
+  padding-top: 0.75em;
+}
+
+.favorite-presets > span {
+  font-size: 125%;
+  font-weight: 700;
+}
+
+.favorite-preset-buttons {
+  display: inline-flex;
+  gap: 0.5em;
+  justify-self: start;
+}
+
+.favorite-preset-group {
+  display: inline-flex;
+  justify-self: start;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.5em;
+}
+
+.favorite-preset-buttons button {
+  height: var(--control-height);
+  border: 0;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 0.75em;
+  font-weight: 700;
+}
+
+.favorite-preset-group button + button {
+  border-left: 1px solid var(--line);
+}
+
+.favorite-preset-buttons button:hover,
+.favorite-preset-buttons button:focus-visible {
+  background: var(--bg);
+}
+
+.favorite-preset-buttons button.active {
+  background: var(--text);
+  color: var(--surface);
+}
+
 .charm-list,
 .selection-list {
   display: grid;
@@ -294,7 +348,7 @@ h2 {
 .selected-footer {
   display: flex;
   justify-content: flex-end;
-  padding-top: 0.75em;
+  padding-top: 0.5em;
 }
 
 .charm-row,
@@ -341,7 +395,7 @@ h2 {
   position: relative;
   width: 100%;
   align-items: center;
-  gap: 0.25em;
+  gap: 0.5em;
   min-height: 2em;
   border: 0;
   color: var(--text);

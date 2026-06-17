@@ -1,10 +1,24 @@
 (function () {
   const POUCHES = [
-    { name: "Silk Pouch", cost: 0 },
-    { name: "Kevlar Pouch", cost: 1 },
-    { name: "Mithril Pouch", cost: 2 },
+    { name: "Silk Pouch", label: "S", cost: 0 },
+    { name: "Kevlar Pouch", label: "K", cost: 1 },
+    { name: "Mithril Pouch", label: "M", cost: 2 },
   ];
   const FAVORITES_KEY = "hv-charms:favorites";
+  const FAVORITE_PRESETS = {
+    magic: ["archmage", "aether", "annihilator", "economizer", "penetrator", "spellweaver"],
+    melee: ["butcher", "fatality", "swiftness", "overpower"],
+    elemental: [
+      "cold strike",
+      "fire strike",
+      "holy strike",
+      "lightning strike",
+      "dark strike",
+      "wind strike",
+      "hollowforged",
+      "voidseeker",
+    ],
+  };
 
   const state = {
     charms: [],
@@ -26,6 +40,7 @@
     selectionList: document.getElementById("selectionList"),
     presetButtons: Array.from(document.querySelectorAll(".preset")),
     itemButtons: Array.from(document.querySelectorAll(".item-toggle")),
+    favoritePresetButtons: Array.from(document.querySelectorAll("[data-favorite-preset]")),
   };
 
   function charmFamily(name) {
@@ -64,14 +79,87 @@
     localStorage.setItem(FAVORITES_KEY, JSON.stringify([...state.favorites]));
   }
 
+  function charmRowRects() {
+    return new Map(
+      Array.from(els.charmList.querySelectorAll(".charm-row")).map((row) => [
+        row.dataset.charmId,
+        row.getBoundingClientRect(),
+      ])
+    );
+  }
+
+  function animateCharmRows(previousRects) {
+    if (!previousRects) return;
+
+    els.charmList.querySelectorAll(".charm-row").forEach((row) => {
+      const previous = previousRects.get(row.dataset.charmId);
+      if (!previous) return;
+
+      const current = row.getBoundingClientRect();
+      const deltaY = previous.top - current.top;
+      if (!deltaY) return;
+
+      row.animate(
+        [
+          { transform: `translateY(${deltaY}px)` },
+          { transform: "translateY(0)" },
+        ],
+        {
+          duration: 180,
+          easing: "ease-out",
+        }
+      );
+    });
+  }
+
   function toggleFavorite(charm) {
+    const previousRects = charmRowRects();
     if (state.favorites.has(charm.id)) {
       state.favorites.delete(charm.id);
     } else {
       state.favorites.add(charm.id);
     }
     saveFavorites();
-    renderCharms();
+    renderCharms(previousRects);
+    syncFavoritePresetState();
+  }
+
+  function charmIdsForFamilies(families) {
+    const familySet = new Set(families);
+    return state.charms
+      .filter((charm) => familySet.has(charm.family))
+      .map((charm) => charm.id);
+  }
+
+  function syncFavoritePresetState() {
+    els.favoritePresetButtons.forEach((button) => {
+      const preset = button.dataset.favoritePreset;
+      const ids = charmIdsForFamilies(FAVORITE_PRESETS[preset] || []);
+      const active = ids.length > 0 && ids.every((id) => state.favorites.has(id));
+      button.classList.toggle("active", active);
+    });
+  }
+
+  function applyFavoritePreset(preset) {
+    const previousRects = charmRowRects();
+
+    if (preset === "clear") {
+      state.favorites.clear();
+    } else {
+      const ids = charmIdsForFamilies(FAVORITE_PRESETS[preset] || []);
+      const active = ids.length > 0 && ids.every((id) => state.favorites.has(id));
+      ids.forEach((id) => {
+        if (active) {
+          state.favorites.delete(id);
+        } else {
+          state.favorites.add(id);
+        }
+      });
+    }
+
+    saveFavorites();
+    renderCharms(previousRects);
+    syncFavoritePresetState();
   }
 
   function selectedFamilies() {
@@ -254,8 +342,9 @@
     syncPresetState();
   }
 
-  function renderCharms() {
+  function renderCharms(previousRects) {
     els.charmList.textContent = "";
+    syncFavoritePresetState();
 
     const visible = state.charms.filter(isCompatible).sort(sortCharms);
     if (!visible.length) {
@@ -267,6 +356,7 @@
       const status = availability(charm);
       const row = document.createElement("div");
       row.className = "charm-row";
+      row.dataset.charmId = charm.id;
       row.classList.toggle("unavailable", !status.available);
 
       const favorite = document.createElement("button");
@@ -300,6 +390,8 @@
       row.append(favorite, choose, effect);
       els.charmList.append(row);
     });
+
+    animateCharmRows(previousRects);
   }
 
   function renderSelections() {
@@ -341,7 +433,8 @@
       POUCHES.forEach((pouchOption) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.textContent = pouchOption.cost;
+        button.textContent = pouchOption.label;
+        button.title = pouchOption.name;
         button.classList.toggle("active", pouchOption.cost === pouchForSlot(index).cost);
         const projected = selection ? totalCp() - pouchForSlot(index).cost + pouchOption.cost : totalCp();
         button.disabled = selection && projected > state.maxCp;
@@ -393,6 +486,10 @@
         });
         render();
       });
+    });
+
+    els.favoritePresetButtons.forEach((button) => {
+      button.addEventListener("click", () => applyFavoritePreset(button.dataset.favoritePreset));
     });
 
     els.slotInput.addEventListener("input", () => {
