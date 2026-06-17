@@ -12,10 +12,10 @@
     slots: 7,
     maxCp: 100,
     itemType: "Weapon",
+    applyingHash: false,
   };
 
   const els = {
-    remainingCp: document.getElementById("remainingCp"),
     selectedRemainingCp: document.getElementById("selectedRemainingCp"),
     slotInput: document.getElementById("slotInput"),
     cpInput: document.getElementById("cpInput"),
@@ -34,12 +34,12 @@
       .toLowerCase();
   }
 
-  function normalizeCharm(raw) {
+  function normalizeCharm(raw, index) {
     return {
+      id: index,
       name: raw.charm,
       cost: Number(raw.charmPointCost),
       effects: raw.effects,
-      materials: raw.materialCosts,
       slot: raw.slot,
       family: charmFamily(raw.charm),
     };
@@ -113,6 +113,14 @@
     });
   }
 
+  function syncInputs() {
+    els.slotInput.value = state.slots;
+    els.cpInput.value = state.maxCp;
+    els.itemButtons.forEach((button) => {
+      button.classList.toggle("active", button.dataset.type === state.itemType);
+    });
+  }
+
   function trimSelections() {
     ensureSlots();
     state.selections.forEach((selection, index) => {
@@ -149,12 +157,72 @@
     return Math.max(minimum, Number(cleaned) || fallback);
   }
 
+  function encodeHash() {
+    const count = state.slots;
+    const type = state.itemType === "Weapon" ? "0" : "1";
+    const pouchCode = Array.from({ length: count }, (_, index) => pouchForSlot(index).cost)
+      .reduce((value, cost) => value * 3 + cost, 0)
+      .toString(36);
+    const charms = Array.from({ length: count }, (_, index) => {
+      const selection = state.selections[index];
+      return selection ? (selection.charm.id + 1).toString(36).padStart(2, "0") : "00";
+    }).join("");
+
+    return [
+      count.toString(36),
+      state.maxCp.toString(36),
+      `${type}${pouchCode}`,
+      charms,
+    ].join(".");
+  }
+
+  function updateHash() {
+    if (state.applyingHash || !state.charms.length) return;
+    const next = encodeHash();
+    if (window.location.hash.slice(1) === next) return;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
+  }
+
+  function parseHash() {
+    const raw = window.location.hash.slice(1);
+    if (!raw || !state.charms.length) return false;
+
+    const parts = raw.split(".");
+    if (parts.length !== 4) return false;
+
+    const slots = Number.parseInt(parts[0], 36);
+    const maxCp = Number.parseInt(parts[1], 36);
+    if (!Number.isFinite(slots) || slots < 1 || !Number.isFinite(maxCp) || maxCp < 0) return false;
+
+    state.slots = slots;
+    state.maxCp = maxCp;
+    state.itemType = parts[2][0] === "1" ? "Armour/Shield" : "Weapon";
+    ensureSlots();
+
+    let pouchValue = Number.parseInt(parts[2].slice(1) || "0", 36);
+    for (let index = slots - 1; index >= 0; index -= 1) {
+      const pouchCost = pouchValue % 3;
+      state.slotPouches[index] = POUCHES.find((pouch) => pouch.cost === pouchCost) || POUCHES[0];
+      pouchValue = Math.floor(pouchValue / 3);
+    }
+
+    const charmTokens = parts[3] || "";
+    for (let index = 0; index < slots; index += 1) {
+      const charmToken = charmTokens.slice(index * 2, index * 2 + 2) || "00";
+      const charmId = Number.parseInt(charmToken, 36) - 1;
+      const charm = state.charms[charmId];
+      state.selections[index] = charm ? { charm } : null;
+    }
+
+    syncInputs();
+    return true;
+  }
+
   function renderSummary() {
     const total = totalCp();
     const remaining = state.maxCp - total;
     const overLimit = remaining < 0;
 
-    els.remainingCp.textContent = `${remaining} CP left`;
     els.selectedRemainingCp.innerHTML = `<span>remaining</span> <strong>${remaining}CP</strong>`;
     document.body.classList.toggle("over-limit", overLimit);
     syncPresetState();
@@ -175,7 +243,6 @@
       row.type = "button";
       row.className = "charm-row";
       row.disabled = !status.available;
-      row.title = `${charm.effects}\n${charm.materials}`;
 
       const name = document.createElement("span");
       name.className = "name";
@@ -185,7 +252,11 @@
       meta.className = "meta";
       meta.textContent = `${charm.cost} CP`;
 
-      row.append(name, meta);
+      const effect = document.createElement("span");
+      effect.className = "effect-panel";
+      effect.textContent = charm.effects;
+
+      row.append(name, meta, effect);
       row.addEventListener("click", () => addCharm(charm));
       els.charmList.append(row);
     });
@@ -210,13 +281,19 @@
       const name = document.createElement("span");
       name.className = "name";
       name.textContent = selection ? selection.charm.name : "Empty";
-      if (selection) name.title = `${selection.charm.effects}\n${selection.charm.materials}`;
 
       const cost = document.createElement("span");
       cost.className = "meta";
       cost.textContent = costLabel(selection ? selection.charm.cost : 0, pouch.cost);
 
       main.append(number, name, cost);
+
+      if (selection) {
+        const effect = document.createElement("span");
+        effect.className = "effect-panel selected-effect-panel";
+        effect.textContent = selection.charm.effects;
+        row.append(effect);
+      }
 
       const pouchGroup = document.createElement("div");
       pouchGroup.className = "pouch-group";
@@ -225,7 +302,6 @@
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = pouchOption.cost;
-        button.title = pouchOption.name;
         button.classList.toggle("active", pouchOption.cost === pouchForSlot(index).cost);
         const projected = selection ? totalCp() - pouchForSlot(index).cost + pouchOption.cost : totalCp();
         button.disabled = selection && projected > state.maxCp;
@@ -234,7 +310,6 @@
       });
 
       if (selection) {
-        row.title = "Click the charm name to remove it.";
         main.addEventListener("click", () => removeSelection(index));
       } else {
         row.classList.add("empty-slot");
@@ -250,9 +325,16 @@
     renderSummary();
     renderCharms();
     renderSelections();
+    updateHash();
   }
 
   function bindEvents() {
+    window.addEventListener("hashchange", () => {
+      state.applyingHash = true;
+      if (parseHash()) render();
+      state.applyingHash = false;
+    });
+
     els.presetButtons.forEach((button) => {
       button.addEventListener("click", () => {
         state.slots = Number(button.dataset.slots);
@@ -297,6 +379,9 @@
       if (!response.ok) throw new Error(`Unable to load charms: ${response.status}`);
       const data = await response.json();
       state.charms = data.map(normalizeCharm);
+      state.applyingHash = true;
+      parseHash();
+      state.applyingHash = false;
       render();
     } catch (error) {
       els.charmList.innerHTML = '<div class="empty">Could not load data/charms.json.</div>';
