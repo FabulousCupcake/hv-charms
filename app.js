@@ -8,6 +8,7 @@
   const ANIMATION_DURATION = 200;
   const LIST_CAVE_DELAY = 45;
   const LIST_CAVE_DURATION = ANIMATION_DURATION - LIST_CAVE_DELAY;
+  const RETURN_IMPACT_DURATION = 1000;
   const FAVORITE_PRESETS = {
     magic: ["archmage", "aether", "annihilator", "economizer", "penetrator", "spellweaver"],
     melee: ["butcher", "fatality", "swiftness", "overpower"],
@@ -99,6 +100,22 @@
     return els.charmList.querySelector(`[data-charm-id="${charmId}"]`);
   }
 
+  function triggerCharmReturnImpact(row) {
+    if (!row || prefersReducedMotion()) return;
+
+    const token = String(Date.now());
+    row.dataset.returnImpact = token;
+    row.classList.remove("charm-return-impact");
+    void row.offsetWidth;
+    row.classList.add("charm-return-impact");
+
+    window.setTimeout(() => {
+      if (row.dataset.returnImpact !== token) return;
+      row.classList.remove("charm-return-impact");
+      delete row.dataset.returnImpact;
+    }, RETURN_IMPACT_DURATION);
+  }
+
   function animateCharmListCave(previousRects) {
     if (!previousRects || prefersReducedMotion()) return;
 
@@ -173,17 +190,18 @@
       return Promise.resolve();
     }
 
-    const deltaX = targetRect.left - sourceRect.left;
-    const deltaY = targetRect.top - sourceRect.top;
-    const scaleX = targetRect.width / sourceRect.width;
-    const scaleY = targetRect.height / sourceRect.height;
+    const startLeft = sourceRect.left + (sourceRect.width - targetRect.width) / 2;
+    const startTop = sourceRect.top + (sourceRect.height - targetRect.height) / 2;
+    const deltaX = targetRect.left - startLeft;
+    const deltaY = targetRect.top - startTop;
     const flyer = document.createElement("div");
 
     flyer.className = "charm-flyer";
-    flyer.style.left = `${sourceRect.left}px`;
-    flyer.style.top = `${sourceRect.top}px`;
-    flyer.style.width = `${sourceRect.width}px`;
-    flyer.style.height = `${sourceRect.height}px`;
+    if (options.listTarget) flyer.classList.add("charm-flyer-list");
+    flyer.style.left = `${startLeft}px`;
+    flyer.style.top = `${startTop}px`;
+    flyer.style.width = `${targetRect.width}px`;
+    flyer.style.height = `${targetRect.height}px`;
 
     const name = document.createElement("span");
     name.className = "name";
@@ -202,11 +220,11 @@
       [
         {
           opacity: 0.95,
-          transform: "translate(0, 0) scale(1)",
+          transform: "translate(0, 0)",
         },
         {
           opacity: 0.9,
-          transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`,
+          transform: `translate(${deltaX}px, ${deltaY}px)`,
         },
       ],
       {
@@ -239,7 +257,12 @@
     const targetRect = options.target?.targetRect || target?.getBoundingClientRect();
     if (!target) return Promise.resolve();
 
-    return animateCharmFlight(charm, sourceRect, targetRect, targetRow, target, options);
+    return animateCharmFlight(charm, sourceRect, targetRect, targetRow, target, {
+      ...options,
+      listTarget: true,
+    }).then(() => {
+      if (options.impact) triggerCharmReturnImpact(targetRow);
+    });
   }
 
   function toggleFavorite(charm) {
@@ -420,9 +443,22 @@
     animateCharmListCave(previousCharmRects);
     if (prefersReducedMotion()) return;
 
-    animateSelectedCharm(charm, incomingSourceRect, slotIndex, { hideTarget: true }).then(() => {
-      animateRemovedCharm(previousSelection.charm, outgoingSourceRect, { hideTarget: true });
-    });
+    const returningRow = charmListRow(previousSelection.charm.id);
+    const returningTarget = returningRow?.querySelector(".charm-pick");
+    returningRow?.classList.add("charm-flight-hidden");
+    returningTarget?.classList.add("charm-flight-hidden");
+
+    animateSelectedCharm(charm, incomingSourceRect, slotIndex, { hideTarget: true })
+      .then(() =>
+        animateRemovedCharm(previousSelection.charm, outgoingSourceRect, {
+          hideTarget: true,
+          impact: true,
+        })
+      )
+      .finally(() => {
+        returningRow?.classList.remove("charm-flight-hidden");
+        returningTarget?.classList.remove("charm-flight-hidden");
+      });
   }
 
   function removeSelection(index, sourceElement) {
@@ -435,7 +471,11 @@
     state.selections[index] = null;
     render();
     const target = prepareOpeningCharmListGap(charm);
-    animateRemovedCharm(charm, sourceRect, { hideTarget: true, target });
+    animateRemovedCharm(charm, sourceRect, {
+      hideTarget: true,
+      impact: true,
+      target,
+    });
   }
 
   function setPouch(index, pouchCost) {

@@ -401,7 +401,6 @@ h2 {
   color: var(--text);
   padding: 0 0 0 0.5em;
   text-align: left;
-  transition: background 200ms ease, color 200ms ease;
 }
 
 .charm-row:hover {
@@ -500,12 +499,53 @@ h2 {
   will-change: transform, opacity;
 }
 
+.charm-flyer-list {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.35em 0.5em 0.35em 0;
+  box-shadow: none;
+}
+
 .charm-flight-hidden {
   visibility: hidden;
 }
 
 .charm-row.charm-list-gap-opening > * {
   visibility: hidden;
+}
+
+.charm-row.charm-return-impact::before,
+.charm-row.charm-return-impact::after {
+  content: "";
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--line);
+  pointer-events: none;
+  animation: charm-return-impact 1000ms ease-out forwards;
+}
+
+.charm-row.charm-return-impact::before {
+  top: 0;
+  box-shadow: 0 -0.35em 0.7em rgb(92 13 17 / 0.28);
+}
+
+.charm-row.charm-return-impact::after {
+  bottom: 0;
+  box-shadow: 0 0.35em 0.7em rgb(92 13 17 / 0.28);
+}
+
+@keyframes charm-return-impact {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 .effect-panel {
@@ -568,7 +608,6 @@ h2 {
 .selection-row.counterpart-highlight,
 .charm-row.charm-flight-arriving {
   background: #F5F1D6;
-  transition: background 360ms ease;
 }
 
 .selection-main {
