@@ -5,6 +5,9 @@
     { name: "Mithril Pouch", label: "M", cost: 2 },
   ];
   const FAVORITES_KEY = "hv-charms:favorites";
+  const ANIMATION_DURATION = 200;
+  const LIST_CAVE_DELAY = 45;
+  const LIST_CAVE_DURATION = ANIMATION_DURATION - LIST_CAVE_DELAY;
   const FAVORITE_PRESETS = {
     magic: ["archmage", "aether", "annihilator", "economizer", "penetrator", "spellweaver"],
     melee: ["butcher", "fatality", "swiftness", "overpower"],
@@ -88,39 +91,165 @@
     );
   }
 
-  function animateCharmRows(previousRects) {
-    if (!previousRects) return;
+  function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function charmListRow(charmId) {
+    return els.charmList.querySelector(`[data-charm-id="${charmId}"]`);
+  }
+
+  function animateCharmListCave(previousRects) {
+    if (!previousRects || prefersReducedMotion()) return;
 
     els.charmList.querySelectorAll(".charm-row").forEach((row) => {
       const previous = previousRects.get(row.dataset.charmId);
       if (!previous) return;
 
       const current = row.getBoundingClientRect();
+      const deltaX = previous.left - current.left;
       const deltaY = previous.top - current.top;
-      if (!deltaY) return;
+      if (!deltaX && !deltaY) return;
 
       row.animate(
         [
-          { transform: `translateY(${deltaY}px)` },
-          { transform: "translateY(0)" },
+          { transform: `translate(${deltaX}px, ${deltaY}px)` },
+          { transform: "translate(0, 0)" },
         ],
         {
-          duration: 180,
-          easing: "ease-out",
+          delay: LIST_CAVE_DELAY,
+          duration: LIST_CAVE_DURATION,
+          easing: "ease",
+          fill: "backwards",
         }
       );
     });
   }
 
+  function prepareOpeningCharmListGap(charm) {
+    if (prefersReducedMotion()) return null;
+
+    const row = charmListRow(charm.id);
+    const target = row?.querySelector(".charm-pick");
+    if (!row || !target) return null;
+
+    const rowRect = row.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    if (!rowRect.height || !targetRect.width || !targetRect.height) return null;
+
+    row.classList.add("charm-list-gap-opening");
+    row.style.height = "0px";
+    row.style.minHeight = "0px";
+    row.style.overflow = "hidden";
+
+    const animation = row.animate([{ height: "0px" }, { height: `${rowRect.height}px` }], {
+      duration: ANIMATION_DURATION,
+      easing: "ease",
+      fill: "forwards",
+    });
+
+    animation.finished
+      .catch(() => {})
+      .finally(() => {
+        row.classList.remove("charm-list-gap-opening");
+        row.style.height = "";
+        row.style.minHeight = "";
+        row.style.overflow = "";
+      });
+
+    return { row, target, targetRect };
+  }
+
+  function animateCharmFlight(charm, sourceRect, targetRect, arrivalElement, targetElement, options = {}) {
+    if (
+      !sourceRect ||
+      !targetRect ||
+      !sourceRect.width ||
+      !sourceRect.height ||
+      !targetRect.width ||
+      !targetRect.height ||
+      prefersReducedMotion()
+    ) {
+      return Promise.resolve();
+    }
+
+    const deltaX = targetRect.left - sourceRect.left;
+    const deltaY = targetRect.top - sourceRect.top;
+    const scaleX = targetRect.width / sourceRect.width;
+    const scaleY = targetRect.height / sourceRect.height;
+    const flyer = document.createElement("div");
+
+    flyer.className = "charm-flyer";
+    flyer.style.left = `${sourceRect.left}px`;
+    flyer.style.top = `${sourceRect.top}px`;
+    flyer.style.width = `${sourceRect.width}px`;
+    flyer.style.height = `${sourceRect.height}px`;
+
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = charm.name;
+
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.textContent = `${charm.cost} CP`;
+
+    flyer.append(name, meta);
+    document.body.append(flyer);
+
+    arrivalElement?.classList.add("charm-flight-arriving");
+    if (options.hideTarget) targetElement?.classList.add("charm-flight-hidden");
+    const animation = flyer.animate(
+      [
+        {
+          opacity: 0.95,
+          transform: "translate(0, 0) scale(1)",
+        },
+        {
+          opacity: 0.9,
+          transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`,
+        },
+      ],
+      {
+        duration: ANIMATION_DURATION,
+        easing: "ease",
+        fill: "forwards",
+      }
+    );
+
+    return animation.finished
+      .catch(() => {})
+      .finally(() => {
+        flyer.remove();
+        arrivalElement?.classList.remove("charm-flight-arriving");
+        targetElement?.classList.remove("charm-flight-hidden");
+      });
+  }
+
+  function animateSelectedCharm(charm, sourceRect, slotIndex, options) {
+    const targetRow = els.selectionList.children[slotIndex];
+    const target = targetRow?.querySelector(".selection-main");
+    if (!target) return Promise.resolve();
+
+    return animateCharmFlight(charm, sourceRect, target.getBoundingClientRect(), targetRow, target, options);
+  }
+
+  function animateRemovedCharm(charm, sourceRect, options = {}) {
+    const targetRow = options.target?.row || charmListRow(charm.id);
+    const target = options.target?.target || targetRow?.querySelector(".charm-pick");
+    const targetRect = options.target?.targetRect || target?.getBoundingClientRect();
+    if (!target) return Promise.resolve();
+
+    return animateCharmFlight(charm, sourceRect, targetRect, targetRow, target, options);
+  }
+
   function toggleFavorite(charm) {
-    const previousRects = charmRowRects();
     if (state.favorites.has(charm.id)) {
       state.favorites.delete(charm.id);
     } else {
       state.favorites.add(charm.id);
     }
     saveFavorites();
-    renderCharms(previousRects);
+    renderCharms();
     syncFavoritePresetState();
   }
 
@@ -141,8 +270,6 @@
   }
 
   function applyFavoritePreset(preset) {
-    const previousRects = charmRowRects();
-
     if (preset === "clear") {
       state.favorites.clear();
     } else {
@@ -158,17 +285,30 @@
     }
 
     saveFavorites();
-    renderCharms(previousRects);
+    renderCharms();
     syncFavoritePresetState();
   }
 
+  function activeSelections() {
+    return state.selections
+      .slice(0, state.slots)
+      .map((selection, index) => (selection ? { selection, index } : null))
+      .filter(Boolean);
+  }
+
+  function selectedCharmIds() {
+    return new Set(activeSelections().map(({ selection }) => selection.charm.id));
+  }
+
+  function selectedFamilySlotMap() {
+    return activeSelections().reduce((slots, { selection, index }) => {
+      if (!slots.has(selection.charm.family)) slots.set(selection.charm.family, index);
+      return slots;
+    }, new Map());
+  }
+
   function selectedFamilies() {
-    return new Set(
-      state.selections
-        .slice(0, state.slots)
-        .filter(Boolean)
-        .map((selection) => selection.charm.family)
-    );
+    return new Set(activeSelections().map(({ selection }) => selection.charm.family));
   }
 
   function ensureSlots() {
@@ -206,12 +346,22 @@
     return { available: true, reason: "" };
   }
 
+  function swapAvailability(charm, slotIndex) {
+    const selection = state.selections[slotIndex];
+    if (!selection || selection.charm.family !== charm.family) {
+      return { available: false, reason: "no counterpart" };
+    }
+    if (!isCompatible(charm)) return { available: false, reason: "wrong item" };
+
+    const projected = totalCp() - selection.charm.cost + charm.cost;
+    if (projected > state.maxCp) return { available: false, reason: "over CP" };
+
+    return { available: true, reason: "" };
+  }
+
   function sortCharms(a, b) {
-    const aState = availability(a);
-    const bState = availability(b);
     return (
       Number(state.favorites.has(b.id)) - Number(state.favorites.has(a.id)) ||
-      Number(bState.available) - Number(aState.available) ||
       b.cost - a.cost ||
       a.family.localeCompare(b.family) ||
       a.name.localeCompare(b.name)
@@ -243,15 +393,49 @@
     });
   }
 
-  function addCharm(charm) {
+  function addCharm(charm, sourceElement) {
     if (!availability(charm).available) return;
-    state.selections[firstFreeSlot()] = { charm };
+    const slotIndex = firstFreeSlot();
+    const previousCharmRects = charmRowRects();
+    const sourceRect = sourceElement?.getBoundingClientRect();
+
+    state.selections[slotIndex] = { charm };
     render();
+    animateCharmListCave(previousCharmRects);
+    animateSelectedCharm(charm, sourceRect, slotIndex, { hideTarget: true });
   }
 
-  function removeSelection(index) {
+  function swapCharm(charm, slotIndex, sourceElement) {
+    if (!swapAvailability(charm, slotIndex).available) return;
+
+    const previousCharmRects = charmRowRects();
+    const previousSelection = state.selections[slotIndex];
+    const incomingSourceRect = sourceElement?.getBoundingClientRect();
+    const outgoingSourceRect = els.selectionList.children[slotIndex]
+      ?.querySelector(".selection-main")
+      ?.getBoundingClientRect();
+
+    state.selections[slotIndex] = { charm };
+    render();
+    animateCharmListCave(previousCharmRects);
+    if (prefersReducedMotion()) return;
+
+    animateSelectedCharm(charm, incomingSourceRect, slotIndex, { hideTarget: true }).then(() => {
+      animateRemovedCharm(previousSelection.charm, outgoingSourceRect, { hideTarget: true });
+    });
+  }
+
+  function removeSelection(index, sourceElement) {
+    const selection = state.selections[index];
+    if (!selection) return;
+
+    const sourceRect = sourceElement?.getBoundingClientRect();
+    const charm = selection.charm;
+
     state.selections[index] = null;
     render();
+    const target = prepareOpeningCharmListGap(charm);
+    animateRemovedCharm(charm, sourceRect, { hideTarget: true, target });
   }
 
   function setPouch(index, pouchCost) {
@@ -342,22 +526,52 @@
     syncPresetState();
   }
 
-  function renderCharms(previousRects) {
+  function setCounterpartHighlight(slotIndex, active) {
+    const row = els.selectionList.children[slotIndex];
+    if (row) row.classList.toggle("counterpart-highlight", active);
+  }
+
+  function clearCounterpartHighlights() {
+    els.selectionList.querySelectorAll(".counterpart-highlight").forEach((row) => {
+      row.classList.remove("counterpart-highlight");
+    });
+  }
+
+  function renderCharms() {
+    clearCounterpartHighlights();
     els.charmList.textContent = "";
     syncFavoritePresetState();
 
-    const visible = state.charms.filter(isCompatible).sort(sortCharms);
+    const selectedIds = selectedCharmIds();
+    const familySlots = selectedFamilySlotMap();
+    const compatible = state.charms.filter(
+      (charm) => isCompatible(charm) && !selectedIds.has(charm.id)
+    );
+    const visible = compatible.sort(sortCharms);
+
     if (!visible.length) {
       els.charmList.innerHTML = '<div class="empty">No charms for this item type.</div>';
       return;
     }
 
     visible.forEach((charm) => {
-      const status = availability(charm);
+      const counterpartSlotIndex = familySlots.get(charm.family);
+      const isCounterpart = counterpartSlotIndex !== undefined;
+      const status = isCounterpart
+        ? swapAvailability(charm, counterpartSlotIndex)
+        : availability(charm);
       const row = document.createElement("div");
       row.className = "charm-row";
       row.dataset.charmId = charm.id;
       row.classList.toggle("unavailable", !status.available);
+      row.classList.toggle("counterpart-row", isCounterpart);
+
+      if (isCounterpart) {
+        row.addEventListener("pointerenter", () => setCounterpartHighlight(counterpartSlotIndex, true));
+        row.addEventListener("pointerleave", () => setCounterpartHighlight(counterpartSlotIndex, false));
+        row.addEventListener("focusin", () => setCounterpartHighlight(counterpartSlotIndex, true));
+        row.addEventListener("focusout", () => setCounterpartHighlight(counterpartSlotIndex, false));
+      }
 
       const favorite = document.createElement("button");
       favorite.type = "button";
@@ -386,12 +600,17 @@
       effect.textContent = charm.effects;
 
       choose.append(name, meta);
-      choose.addEventListener("click", () => addCharm(charm));
+      choose.addEventListener("click", () => {
+        if (isCounterpart) {
+          swapCharm(charm, counterpartSlotIndex, choose);
+        } else {
+          addCharm(charm, choose);
+        }
+      });
       row.append(favorite, choose, effect);
       els.charmList.append(row);
     });
 
-    animateCharmRows(previousRects);
   }
 
   function renderSelections() {
@@ -443,7 +662,7 @@
       });
 
       if (selection) {
-        main.addEventListener("click", () => removeSelection(index));
+        main.addEventListener("click", () => removeSelection(index, main));
       } else {
         row.classList.add("empty-slot");
       }
