@@ -566,6 +566,14 @@ h2 {
   box-shadow: none;
 }
 
+.selection-main.charm-target-flyer {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
 .charm-flight-hidden {
   visibility: hidden;
 }

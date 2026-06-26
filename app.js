@@ -368,24 +368,30 @@
     const startTop = sourceRect.top + (sourceRect.height - targetRect.height) / 2;
     const deltaX = targetRect.left - startLeft;
     const deltaY = targetRect.top - startTop;
-    const flyer = document.createElement("div");
+    const flyer = options.cloneTarget ? targetElement.cloneNode(true) : document.createElement("div");
 
-    flyer.className = "charm-flyer";
-    if (options.listTarget) flyer.classList.add("charm-flyer-list");
+    if (options.cloneTarget) {
+      flyer.classList.add("charm-target-flyer");
+    } else {
+      flyer.className = "charm-flyer";
+      if (options.listTarget) flyer.classList.add("charm-flyer-list");
+    }
     flyer.style.left = `${startLeft}px`;
     flyer.style.top = `${startTop}px`;
     flyer.style.width = `${targetRect.width}px`;
     flyer.style.height = `${targetRect.height}px`;
 
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = charm.name;
+    if (!options.cloneTarget) {
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = charm.name;
 
-    const meta = document.createElement("span");
-    meta.className = "meta";
-    meta.textContent = `${charm.cost} CP`;
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = `${charm.cost} CP`;
 
-    flyer.append(name, meta);
+      flyer.append(name, meta);
+    }
     document.body.append(flyer);
 
     arrivalElement?.classList.add("charm-flight-arriving");
@@ -397,7 +403,7 @@
           transform: "translate(0, 0)",
         },
         {
-          opacity: 0.9,
+          opacity: 1,
           transform: `translate(${deltaX}px, ${deltaY}px)`,
         },
       ],
@@ -422,7 +428,10 @@
     const target = targetRow?.querySelector(".selection-main");
     if (!target) return Promise.resolve();
 
-    return animateCharmFlight(charm, sourceRect, target.getBoundingClientRect(), targetRow, target, options);
+    return animateCharmFlight(charm, sourceRect, target.getBoundingClientRect(), targetRow, target, {
+      ...options,
+      cloneTarget: true,
+    });
   }
 
   function animateRemovedCharm(charm, sourceRect, options = {}) {
