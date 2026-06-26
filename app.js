@@ -8,7 +8,8 @@
   const ANIMATION_DURATION = 200;
   const LIST_CAVE_DELAY = 45;
   const LIST_CAVE_DURATION = ANIMATION_DURATION - LIST_CAVE_DELAY;
-  const RETURN_IMPACT_DURATION = 1000;
+  const RETURN_IMPACT_DURATION = 1500;
+  let returnImpactSequence = 0;
   const FAVORITE_PRESETS = {
     magic: ["archmage", "aether", "annihilator", "economizer", "penetrator", "spellweaver"],
     melee: ["butcher", "fatality", "swiftness", "overpower"],
@@ -103,23 +104,33 @@
   function triggerCharmReturnImpact(row) {
     if (!row || prefersReducedMotion()) return;
 
-    const token = String(Date.now());
+    const token = String((returnImpactSequence += 1));
     row.dataset.returnImpact = token;
     row.classList.remove("charm-return-impact");
-    void row.offsetWidth;
-    row.classList.add("charm-return-impact");
 
-    window.setTimeout(() => {
+    const startImpact = () => {
       if (row.dataset.returnImpact !== token) return;
-      row.classList.remove("charm-return-impact");
-      delete row.dataset.returnImpact;
-    }, RETURN_IMPACT_DURATION);
+      void row.offsetWidth;
+      row.classList.add("charm-return-impact");
+
+      window.setTimeout(() => {
+        if (row.dataset.returnImpact !== token) return;
+        row.classList.remove("charm-return-impact");
+        delete row.dataset.returnImpact;
+      }, RETURN_IMPACT_DURATION);
+    };
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(startImpact);
+    });
   }
 
-  function animateCharmListCave(previousRects) {
+  function animateCharmListCave(previousRects, options = {}) {
     if (!previousRects || prefersReducedMotion()) return;
 
     els.charmList.querySelectorAll(".charm-row").forEach((row) => {
+      if (String(options.excludeCharmId) === row.dataset.charmId) return;
+
       const previous = previousRects.get(row.dataset.charmId);
       if (!previous) return;
 
@@ -134,13 +145,97 @@
           { transform: "translate(0, 0)" },
         ],
         {
-          delay: LIST_CAVE_DELAY,
-          duration: LIST_CAVE_DURATION,
+          delay: options.delay ?? LIST_CAVE_DELAY,
+          duration: options.duration ?? LIST_CAVE_DURATION,
           easing: "ease",
           fill: "backwards",
         }
       );
     });
+  }
+
+  function favoriteMoveSnapshot(sourceElement, favoriteActive) {
+    const sourceRow = sourceElement?.closest(".charm-row");
+    if (!sourceRow) return null;
+
+    const clone = sourceRow.cloneNode(true);
+    clone.querySelector(".effect-panel")?.remove();
+    clone.querySelector(".favorite-button")?.classList.toggle("active", favoriteActive);
+    clone.classList.remove("charm-flight-hidden", "charm-return-impact");
+
+    return {
+      rect: sourceRow.getBoundingClientRect(),
+      clone,
+    };
+  }
+
+  function clamp(value, minimum, maximum) {
+    return Math.min(Math.max(value, minimum), maximum);
+  }
+
+  function animateFavoriteMove(charm, snapshot, previousRects) {
+    if (!snapshot || prefersReducedMotion()) return;
+
+    const targetRow = charmListRow(charm.id);
+    if (!targetRow) return;
+
+    const targetRect = targetRow.getBoundingClientRect();
+    const deltaX = targetRect.left - snapshot.rect.left;
+    const deltaY = targetRect.top - snapshot.rect.top;
+    if (!deltaX && !deltaY) return;
+
+    const clone = snapshot.clone;
+    const distance = Math.hypot(deltaX, deltaY);
+    const arcAmount = clamp(distance * 0.25, 5, 80);
+    const arcX = deltaY < 0 ? arcAmount : -arcAmount;
+    const maxDistance = Math.max(window.innerHeight * 0.8, 1);
+    const duration = clamp(100 + (distance / maxDistance) * 300, 100, 400);
+    clone.classList.add("charm-row-flyer");
+    clone.style.left = `${snapshot.rect.left}px`;
+    clone.style.top = `${snapshot.rect.top}px`;
+    clone.style.width = `${targetRect.width}px`;
+    clone.style.height = `${targetRect.height}px`;
+    document.body.append(clone);
+
+    targetRow.classList.add("charm-flight-hidden");
+    animateCharmListCave(previousRects, {
+      delay: duration,
+      duration: LIST_CAVE_DURATION,
+      excludeCharmId: charm.id,
+    });
+
+    const animation = clone.animate(
+      [
+        {
+          offset: 0,
+          opacity: 0.96,
+          transform: "translate(0, 0)",
+        },
+        {
+          offset: 0.55,
+          opacity: 0.94,
+          transform: `translate(${deltaX * 0.55 + arcX}px, ${deltaY * 0.55}px)`,
+        },
+        {
+          offset: 1,
+          opacity: 0.9,
+          transform: `translate(${deltaX}px, ${deltaY}px)`,
+        },
+      ],
+      {
+        duration,
+        easing: "ease",
+        fill: "forwards",
+      }
+    );
+
+    animation.finished
+      .catch(() => {})
+      .finally(() => {
+        clone.remove();
+        targetRow.classList.remove("charm-flight-hidden");
+        triggerCharmReturnImpact(targetRow);
+      });
   }
 
   function prepareOpeningCharmListGap(charm) {
@@ -265,8 +360,12 @@
     });
   }
 
-  function toggleFavorite(charm) {
-    if (state.favorites.has(charm.id)) {
+  function toggleFavorite(charm, sourceElement) {
+    const previousRects = charmRowRects();
+    const nextFavorite = !state.favorites.has(charm.id);
+    const snapshot = favoriteMoveSnapshot(sourceElement, nextFavorite);
+
+    if (!nextFavorite) {
       state.favorites.delete(charm.id);
     } else {
       state.favorites.add(charm.id);
@@ -274,6 +373,7 @@
     saveFavorites();
     renderCharms();
     syncFavoritePresetState();
+    animateFavoriteMove(charm, snapshot, previousRects);
   }
 
   function charmIdsForFamilies(families) {
@@ -620,7 +720,7 @@
       favorite.setAttribute("data-empty", "☆");
       favorite.setAttribute("data-filled", "★");
       favorite.setAttribute("aria-label", state.favorites.has(charm.id) ? `Unfavorite ${charm.name}` : `Favorite ${charm.name}`);
-      favorite.addEventListener("click", () => toggleFavorite(charm));
+      favorite.addEventListener("click", () => toggleFavorite(charm, favorite));
 
       const choose = document.createElement("button");
       choose.type = "button";
