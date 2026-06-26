@@ -390,6 +390,8 @@ h2 {
 }
 
 .charm-row {
+  --charm-row-background: var(--surface);
+
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   position: relative;
@@ -400,20 +402,43 @@ h2 {
   border: 0;
   color: var(--text);
   padding: 0 0 0 0.5em;
+  background: var(--charm-row-background);
   text-align: left;
 }
 
 .charm-row:hover {
+  --charm-row-background: var(--bg);
+
   background: var(--bg);
 }
 
 .charm-row.unavailable {
+  --charm-row-background: var(--surface);
+
   background: var(--surface);
+}
+
+.charm-row.counterpart-row {
+  --charm-row-background: rgb(92 13 17 / 0.06);
+
+  background: var(--charm-row-background);
+  box-shadow: inset 3px 0 0 rgb(92 13 17 / 0.55);
 }
 
 .charm-row.counterpart-row:hover,
 .charm-row.counterpart-row:focus-within {
-  background: var(--bg);
+  --charm-row-background: rgb(92 13 17 / 0.12);
+
+  background: var(--charm-row-background);
+}
+
+.charm-row.counterpart-row:not(.unavailable):hover .favorite-button,
+.charm-row.counterpart-row:not(.unavailable):hover .charm-pick > .name,
+.charm-row.counterpart-row:not(.unavailable):hover .charm-pick > .meta,
+.charm-row.counterpart-row:not(.unavailable):focus-within .favorite-button,
+.charm-row.counterpart-row:not(.unavailable):focus-within .charm-pick > .name,
+.charm-row.counterpart-row:not(.unavailable):focus-within .charm-pick > .meta {
+  opacity: 0.28;
 }
 
 .favorite-button,
@@ -462,6 +487,7 @@ h2 {
 
 .charm-pick {
   display: flex;
+  position: relative;
   align-items: center;
   justify-content: space-between;
   gap: 0.75em;
@@ -472,6 +498,30 @@ h2 {
   padding: 0.35em 0.5em 0.35em 0;
   text-align: left;
   transition: color 200ms ease;
+}
+
+.charm-row.counterpart-row .charm-pick::after {
+  content: "Swap";
+  position: absolute;
+  z-index: 25;
+  top: 50%;
+  left: 50%;
+  padding: 0.25em 0.6em;
+  border: 1px solid rgb(92 13 17 / 0.35);
+  border-radius: 0.25em;
+  background: rgb(92 13 17 / 0.9);
+  color: var(--surface);
+  font-size: 78%;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.charm-row.counterpart-row:not(.unavailable):hover .charm-pick::after,
+.charm-row.counterpart-row:not(.unavailable):focus-within .charm-pick::after {
+  opacity: 1;
 }
 
 .charm-pick:disabled {
@@ -524,6 +574,11 @@ h2 {
   visibility: hidden;
 }
 
+.charm-row.charm-return-impact {
+  animation: charm-return-impact-background 1500ms ease-out forwards;
+  animation-delay: var(--charm-return-impact-delay, 0ms);
+}
+
 .charm-row.charm-return-impact::before,
 .charm-row.charm-return-impact::after {
   content: "";
@@ -535,11 +590,18 @@ h2 {
   background: var(--line);
   pointer-events: none;
   animation: charm-return-impact 1500ms ease-out forwards;
+  animation-delay: var(--charm-return-impact-delay, 0ms);
+  animation-fill-mode: both;
 }
 
 .charm-row.charm-return-impact::before {
   top: 0;
   box-shadow: 0 -0.35em 0.7em rgb(92 13 17 / 0.28);
+}
+
+.charm-row.charm-return-impact-merge-top::before {
+  opacity: 0;
+  animation-name: none;
 }
 
 .charm-row.charm-return-impact::after {
@@ -554,6 +616,16 @@ h2 {
 
   to {
     opacity: 0;
+  }
+}
+
+@keyframes charm-return-impact-background {
+  from {
+    background-color: rgb(92 13 17 / 0.12);
+  }
+
+  to {
+    background-color: var(--charm-row-background);
   }
 }
 
@@ -613,10 +685,9 @@ h2 {
   cursor: default;
 }
 
-.selection-row.charm-flight-arriving,
 .selection-row.counterpart-highlight,
 .charm-row.charm-flight-arriving {
-  background: #F5F1D6;
+  background: rgb(92 13 17 / 0.12);
 }
 
 .selection-main {
@@ -631,7 +702,8 @@ h2 {
 }
 
 .selection-row:hover .selected-effect-panel,
-.selection-row:focus-within .selected-effect-panel {
+.selection-row:focus-within .selected-effect-panel,
+.selection-row.counterpart-highlight .selected-effect-panel {
   display: block;
 }
 

@@ -9,7 +9,15 @@
   const LIST_CAVE_DELAY = 45;
   const LIST_CAVE_DURATION = ANIMATION_DURATION - LIST_CAVE_DELAY;
   const RETURN_IMPACT_DURATION = 1500;
+  const FAVORITE_PRESET_TOTAL_DURATION = 250;
+  const FAVORITE_PRESET_ITEM_DURATION = 100;
+  const CLEAR_SELECTION_TOTAL_DURATION = 250;
   let returnImpactSequence = 0;
+  let favoritePresetSequence = 0;
+  let clearSelectionSequence = 0;
+  const activeReturnImpacts = new Map();
+  let charmAvailabilityFreeze = null;
+  let charmAvailabilityFreezeSequence = 0;
   const FAVORITE_PRESETS = {
     magic: ["archmage", "aether", "annihilator", "economizer", "penetrator", "spellweaver"],
     melee: ["butcher", "fatality", "swiftness", "overpower"],
@@ -93,6 +101,35 @@
     );
   }
 
+  function freezeCharmAvailability() {
+    const token = ++charmAvailabilityFreezeSequence;
+    const snapshot = new Map(
+      Array.from(els.charmList.querySelectorAll(".charm-row")).map((row) => [
+        Number(row.dataset.charmId),
+        { available: !row.classList.contains("unavailable") },
+      ])
+    );
+
+    charmAvailabilityFreeze = { token, snapshot };
+    return token;
+  }
+
+  function frozenCharmStatus(charm, status) {
+    if (!charmAvailabilityFreeze) return status;
+
+    const frozen = charmAvailabilityFreeze.snapshot.get(charm.id);
+    return {
+      ...status,
+      available: frozen ? frozen.available : true,
+    };
+  }
+
+  function thawCharmAvailability(token) {
+    if (!charmAvailabilityFreeze || charmAvailabilityFreeze.token !== token) return;
+    charmAvailabilityFreeze = null;
+    renderCharms();
+  }
+
   function prefersReducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
@@ -101,23 +138,65 @@
     return els.charmList.querySelector(`[data-charm-id="${charmId}"]`);
   }
 
-  function triggerCharmReturnImpact(row) {
+  function applyCharmReturnImpact(row) {
+    const impact = activeReturnImpacts.get(row.dataset.charmId);
+    if (!impact) return;
+
+    row.dataset.returnImpact = impact.token;
+    row.style.setProperty("--charm-return-impact-delay", `${impact.delay}ms`);
+    row.classList.add("charm-return-impact");
+    row.classList.toggle("charm-return-impact-merge-top", Boolean(impact.mergeTop));
+  }
+
+  function triggerCharmReturnImpact(row, options = {}) {
     if (!row || prefersReducedMotion()) return;
 
+    const charmId = row.dataset.charmId;
+    if (!charmId) return;
+
     const token = String((returnImpactSequence += 1));
-    row.dataset.returnImpact = token;
-    row.classList.remove("charm-return-impact");
+    const skipped = clamp(options.skip ?? 0, 0, 1);
+    const delay = -RETURN_IMPACT_DURATION * skipped;
+    const remainingDuration = RETURN_IMPACT_DURATION * (1 - skipped);
+    activeReturnImpacts.set(charmId, { token, delay, mergeTop: false });
+    row.classList.remove("charm-return-impact", "charm-return-impact-merge-top");
+    row.style.removeProperty("--charm-return-impact-delay");
 
     const startImpact = () => {
-      if (row.dataset.returnImpact !== token) return;
-      void row.offsetWidth;
-      row.classList.add("charm-return-impact");
+      const impact = activeReturnImpacts.get(charmId);
+      if (impact?.token !== token) return;
+      const currentRow = charmListRow(charmId);
+      if (!currentRow) return;
+
+      const previousRow = currentRow.previousElementSibling;
+      impact.mergeTop = Boolean(
+        impact.mergeTop ||
+          previousRow?.classList.contains("charm-return-impact")
+      );
+
+      currentRow.dataset.returnImpact = token;
+      currentRow.style.setProperty("--charm-return-impact-delay", `${delay}ms`);
+      void currentRow.offsetWidth;
+      currentRow.classList.add("charm-return-impact");
+      currentRow.classList.toggle("charm-return-impact-merge-top", impact.mergeTop);
+
+      const nextRow = currentRow.nextElementSibling;
+      if (nextRow?.classList.contains("charm-return-impact")) {
+        const nextImpact = activeReturnImpacts.get(nextRow.dataset.charmId);
+        if (nextImpact) nextImpact.mergeTop = true;
+        nextRow.classList.add("charm-return-impact-merge-top");
+      }
 
       window.setTimeout(() => {
-        if (row.dataset.returnImpact !== token) return;
-        row.classList.remove("charm-return-impact");
-        delete row.dataset.returnImpact;
-      }, RETURN_IMPACT_DURATION);
+        if (activeReturnImpacts.get(charmId)?.token !== token) return;
+        activeReturnImpacts.delete(charmId);
+
+        const latestRow = charmListRow(charmId);
+        if (latestRow?.dataset.returnImpact !== token) return;
+        latestRow.classList.remove("charm-return-impact", "charm-return-impact-merge-top");
+        latestRow.style.removeProperty("--charm-return-impact-delay");
+        delete latestRow.dataset.returnImpact;
+      }, remainingDuration);
     };
 
     window.requestAnimationFrame(() => {
@@ -173,23 +252,23 @@
     return Math.min(Math.max(value, minimum), maximum);
   }
 
-  function animateFavoriteMove(charm, snapshot, previousRects) {
-    if (!snapshot || prefersReducedMotion()) return;
+  function animateFavoriteMove(charm, snapshot, previousRects, options = {}) {
+    if (!snapshot || prefersReducedMotion()) return Promise.resolve();
 
     const targetRow = charmListRow(charm.id);
-    if (!targetRow) return;
+    if (!targetRow) return Promise.resolve();
 
     const targetRect = targetRow.getBoundingClientRect();
     const deltaX = targetRect.left - snapshot.rect.left;
     const deltaY = targetRect.top - snapshot.rect.top;
-    if (!deltaX && !deltaY) return;
+    if (!deltaX && !deltaY) return Promise.resolve();
 
     const clone = snapshot.clone;
     const distance = Math.hypot(deltaX, deltaY);
     const arcAmount = clamp(distance * 0.25, 5, 80);
     const arcX = deltaY < 0 ? arcAmount : -arcAmount;
     const maxDistance = Math.max(window.innerHeight * 0.8, 1);
-    const duration = clamp(100 + (distance / maxDistance) * 300, 100, 400);
+    const duration = options.duration ?? clamp(100 + (distance / maxDistance) * 300, 100, 400);
     clone.classList.add("charm-row-flyer");
     clone.style.left = `${snapshot.rect.left}px`;
     clone.style.top = `${snapshot.rect.top}px`;
@@ -199,8 +278,8 @@
 
     targetRow.classList.add("charm-flight-hidden");
     animateCharmListCave(previousRects, {
-      delay: duration,
-      duration: LIST_CAVE_DURATION,
+      delay: options.caveDelay ?? duration,
+      duration: options.caveDuration ?? LIST_CAVE_DURATION,
       excludeCharmId: charm.id,
     });
 
@@ -229,7 +308,7 @@
       }
     );
 
-    animation.finished
+    return animation.finished
       .catch(() => {})
       .finally(() => {
         clone.remove();
@@ -356,11 +435,11 @@
       ...options,
       listTarget: true,
     }).then(() => {
-      if (options.impact) triggerCharmReturnImpact(targetRow);
+      if (options.impact) triggerCharmReturnImpact(targetRow, { skip: options.impactSkip });
     });
   }
 
-  function toggleFavorite(charm, sourceElement) {
+  function toggleFavorite(charm, sourceElement, options = {}) {
     const previousRects = charmRowRects();
     const nextFavorite = !state.favorites.has(charm.id);
     const snapshot = favoriteMoveSnapshot(sourceElement, nextFavorite);
@@ -373,7 +452,7 @@
     saveFavorites();
     renderCharms();
     syncFavoritePresetState();
-    animateFavoriteMove(charm, snapshot, previousRects);
+    return animateFavoriteMove(charm, snapshot, previousRects, options);
   }
 
   function charmIdsForFamilies(families) {
@@ -393,23 +472,61 @@
   }
 
   function applyFavoritePreset(preset) {
+    const sequence = ++favoritePresetSequence;
+    let ids = [];
+    let active = false;
+
     if (preset === "clear") {
-      state.favorites.clear();
+      ids = Array.from(state.favorites);
     } else {
-      const ids = charmIdsForFamilies(FAVORITE_PRESETS[preset] || []);
-      const active = ids.length > 0 && ids.every((id) => state.favorites.has(id));
-      ids.forEach((id) => {
-        if (active) {
-          state.favorites.delete(id);
-        } else {
-          state.favorites.add(id);
-        }
-      });
+      ids = charmIdsForFamilies(FAVORITE_PRESETS[preset] || []);
+      active = ids.length > 0 && ids.every((id) => state.favorites.has(id));
+      ids = ids.filter((id) => (active ? state.favorites.has(id) : !state.favorites.has(id)));
     }
 
-    saveFavorites();
-    renderCharms();
-    syncFavoritePresetState();
+    const rowOrder = new Map(
+      Array.from(els.charmList.querySelectorAll(".charm-row")).map((row, index) => [
+        Number(row.dataset.charmId),
+        index,
+      ])
+    );
+    const visibleIds = ids
+      .filter((id) => rowOrder.has(id))
+      .sort((a, b) => rowOrder.get(a) - rowOrder.get(b));
+    const hiddenIds = ids.filter((id) => !rowOrder.has(id));
+
+    hiddenIds.forEach((id) => {
+      if (preset === "clear" || active) {
+        state.favorites.delete(id);
+      } else {
+        state.favorites.add(id);
+      }
+    });
+    if (hiddenIds.length) {
+      saveFavorites();
+      syncFavoritePresetState();
+    }
+
+    const presetTick =
+      visibleIds.length <= 1
+        ? 0
+        : (FAVORITE_PRESET_TOTAL_DURATION - FAVORITE_PRESET_ITEM_DURATION) / (visibleIds.length - 1);
+
+    visibleIds.forEach((id, index) => {
+      window.setTimeout(() => {
+        if (sequence !== favoritePresetSequence) return;
+
+        const charm = state.charms[id];
+        const favorite = charmListRow(id)?.querySelector(".favorite-button");
+        if (charm) {
+          toggleFavorite(charm, favorite, {
+            duration: FAVORITE_PRESET_ITEM_DURATION,
+            caveDelay: 0,
+            caveDuration: FAVORITE_PRESET_ITEM_DURATION,
+          });
+        }
+      }, index * presetTick);
+    });
   }
 
   function activeSelections() {
@@ -518,6 +635,7 @@
 
   function addCharm(charm, sourceElement) {
     if (!availability(charm).available) return;
+    const availabilityToken = freezeCharmAvailability();
     const slotIndex = firstFreeSlot();
     const previousCharmRects = charmRowRects();
     const sourceRect = sourceElement?.getBoundingClientRect();
@@ -525,12 +643,15 @@
     state.selections[slotIndex] = { charm };
     render();
     animateCharmListCave(previousCharmRects);
-    animateSelectedCharm(charm, sourceRect, slotIndex, { hideTarget: true });
+    animateSelectedCharm(charm, sourceRect, slotIndex, { hideTarget: true }).finally(() => {
+      thawCharmAvailability(availabilityToken);
+    });
   }
 
   function swapCharm(charm, slotIndex, sourceElement) {
     if (!swapAvailability(charm, slotIndex).available) return;
 
+    const availabilityToken = freezeCharmAvailability();
     const previousCharmRects = charmRowRects();
     const previousSelection = state.selections[slotIndex];
     const incomingSourceRect = sourceElement?.getBoundingClientRect();
@@ -541,7 +662,10 @@
     state.selections[slotIndex] = { charm };
     render();
     animateCharmListCave(previousCharmRects);
-    if (prefersReducedMotion()) return;
+    if (prefersReducedMotion()) {
+      thawCharmAvailability(availabilityToken);
+      return;
+    }
 
     const returningRow = charmListRow(previousSelection.charm.id);
     const returningTarget = returningRow?.querySelector(".charm-pick");
@@ -553,11 +677,13 @@
         animateRemovedCharm(previousSelection.charm, outgoingSourceRect, {
           hideTarget: true,
           impact: true,
+          impactSkip: 0.5,
         })
       )
       .finally(() => {
         returningRow?.classList.remove("charm-flight-hidden");
         returningTarget?.classList.remove("charm-flight-hidden");
+        thawCharmAvailability(availabilityToken);
       });
   }
 
@@ -565,6 +691,7 @@
     const selection = state.selections[index];
     if (!selection) return;
 
+    const availabilityToken = freezeCharmAvailability();
     const sourceRect = sourceElement?.getBoundingClientRect();
     const charm = selection.charm;
 
@@ -575,6 +702,22 @@
       hideTarget: true,
       impact: true,
       target,
+    }).finally(() => {
+      thawCharmAvailability(availabilityToken);
+    });
+  }
+
+  function clearSelectionsInTicks() {
+    const sequence = ++clearSelectionSequence;
+    const selected = activeSelections();
+    const tick = selected.length <= 1 ? 0 : CLEAR_SELECTION_TOTAL_DURATION / (selected.length - 1);
+
+    selected.forEach(({ index }, tickIndex) => {
+      window.setTimeout(() => {
+        if (sequence !== clearSelectionSequence) return;
+        const sourceElement = els.selectionList.children[index]?.querySelector(".selection-main");
+        removeSelection(index, sourceElement);
+      }, tickIndex * tick);
     });
   }
 
@@ -697,14 +840,16 @@
     visible.forEach((charm) => {
       const counterpartSlotIndex = familySlots.get(charm.family);
       const isCounterpart = counterpartSlotIndex !== undefined;
-      const status = isCounterpart
+      const actualStatus = isCounterpart
         ? swapAvailability(charm, counterpartSlotIndex)
         : availability(charm);
+      const status = frozenCharmStatus(charm, actualStatus);
       const row = document.createElement("div");
       row.className = "charm-row";
       row.dataset.charmId = charm.id;
       row.classList.toggle("unavailable", !status.available);
       row.classList.toggle("counterpart-row", isCounterpart);
+      applyCharmReturnImpact(row);
 
       if (isCounterpart) {
         row.addEventListener("pointerenter", () => setCounterpartHighlight(counterpartSlotIndex, true));
@@ -862,8 +1007,7 @@
     });
 
     els.clearButton.addEventListener("click", () => {
-      state.selections = state.selections.map(() => null);
-      render();
+      clearSelectionsInTicks();
     });
   }
 
